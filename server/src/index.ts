@@ -1,11 +1,15 @@
 import { WebSocket, WebSocketServer } from 'ws';
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({ port: 5000 });
+console.log("backend on");
 
 let senderSocket: null | WebSocket = null;
 let receiverSocket: null | WebSocket = null;
 
 wss.on('connection', function connection(ws) {
+
+  console.log("ws connection on");
+  
   ws.on('error', console.error);
 
   ws.on('message', function message(data: any) {
@@ -19,11 +23,15 @@ wss.on('connection', function connection(ws) {
         return;
       }
       receiverSocket?.send(JSON.stringify({ type: 'createOffer', sdp: message.sdp }));
+      console.log("offer created ");
+      
     } else if (message.type === 'createAnswer') {
         if (ws !== receiverSocket) {
           return;
         }
         senderSocket?.send(JSON.stringify({ type: 'createAnswer', sdp: message.sdp }));
+        console.log("answer created");
+        
     } else if (message.type === 'iceCandidate') {
       if (ws === senderSocket) {
         receiverSocket?.send(JSON.stringify({ type: 'iceCandidate', candidate: message.candidate }));
