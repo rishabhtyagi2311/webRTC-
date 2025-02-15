@@ -1,6 +1,6 @@
 import { WebSocket, WebSocketServer } from 'ws';
 
-const wss = new WebSocketServer({ port: 5000 });
+const wss = new WebSocketServer({ port: 8080 });
 console.log("backend on");
 
 let senderSocket: null | WebSocket = null;
@@ -9,11 +9,14 @@ let receiverSocket: null | WebSocket = null;
 wss.on('connection', function connection(ws) {
 
   console.log("ws connection on");
-  
+
   ws.on('error', console.error);
 
   ws.on('message', function message(data: any) {
     const message = JSON.parse(data);
+    console.log(message.type);
+
+    
     if (message.type === 'sender') {
       senderSocket = ws;
     } else if (message.type === 'receiver') {

@@ -11,18 +11,32 @@ function Sender() {
 
         const socket = new WebSocket('ws://localhost:8080')
         setSocket(socket)
-        socket.onopen = () => {
-            socket.send(JSON.stringify({
-                type: "sender"
-            }))
+
+        if(socket)
+        {
+            socket.onopen = () => {
+                socket?.send(JSON.stringify({
+                    type: "sender"
+                }))
+            }
         }
+       
     } , [])
 
     const initiateConn = () => {
+        console.log("initiating conn");
+        
         if(!socket) 
         {
+            console.log("no socket");
+            
             return 
+           
+            
         }
+        const pc = new RTCPeerConnection()
+        setPc(pc)
+     
         if(pc)
         {
             
@@ -36,24 +50,26 @@ function Sender() {
             }
         }
 
-        const newPc = new RTCPeerConnection()
-        setPc(newPc)
+     
 
         
         if(pc)
         {
-                
+            sendStream(pc)
+
             pc.onicecandidate = (event) =>{
             
                 if(event.candidate)
                 {
-                    socket.send(JSON.stringify({type : "iceCandidate" , candiate : event.candidate}))
+                    socket.send(JSON.stringify({type : "iceCandidate" , candidate : event.candidate}))
                 }
 
 
             }
 
             pc.onnegotiationneeded = async() => {
+                console.log("offer creating ");
+                
                 const offer =  await pc.createOffer()
                 await pc.setLocalDescription(offer)
                 socket?.send(JSON.stringify({
@@ -61,40 +77,45 @@ function Sender() {
                     sdp: pc.localDescription
                 }));
 
-                sendStream(pc)
+               
 
             }
+        
 
         }
-        const sendStream = async (pc : RTCPeerConnection) => {
-            try{
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video:true, audio:true
-                })
-
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-
-                pc.addTrack(stream.getTracks()[0])
-
-            }
-
-            catch(e)
-            {
-                console.log(e);
-                
-            }
-        }
-      
+        
 
 
 
     }
+    const sendStream = async (pc : RTCPeerConnection) => {
+        try{
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video:true, audio:true
+            })
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+              
+            }
+
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        }
+
+        catch(e)
+        {
+            console.log(e);
+            
+        }
+    }
+  
 
     return (
     <div >
-        <video ref={videoRef} ></video>
+       <div>
+       <video ref={videoRef} autoPlay playsInline  ></video>
+       </div>
       <button onClick={initiateConn}> send video </button>
     </div>
   )

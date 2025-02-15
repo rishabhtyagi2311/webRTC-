@@ -1,10 +1,12 @@
 
 
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 
 
 function  Receiver (){
-    
+    const videoRef = useRef<HTMLVideoElement | null>(null); 
+        
+    const [socket, setSocket] = useState <WebSocket | null>(null)
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080');
         socket.onopen = () => {
@@ -12,22 +14,34 @@ function  Receiver (){
                 type: 'receiver'
             }));
         }
-        startReceiving(socket);
+        setSocket(socket)
+        console.log(socket);
+        
+      
     }, []);
+    
 
-    function startReceiving(socket: WebSocket) {
-        const video = document.createElement('video');
-        document.body.appendChild(video);
+    function startReceiving(socket: WebSocket | null) {
+       console.log(socket);
+       
 
         const pc = new RTCPeerConnection();
         pc.ontrack = (event) => {
-            video.srcObject = new MediaStream([event.track]);
-            video.play();
-        }
-
+            console.log(event);
+            
+            if (videoRef.current) {
+                videoRef.current.srcObject = new MediaStream([event.track]);
+            }
+        };
+      
+        
+       if(socket)
+       {
         socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'createOffer') {
+                console.log("offer received");
+                
                 pc.setRemoteDescription(message.sdp).then(() => {
                     pc.createAnswer().then((answer) => {
                         pc.setLocalDescription(answer);
@@ -41,10 +55,20 @@ function  Receiver (){
                 pc.addIceCandidate(message.candidate);
             }
         }
+       }
     }
 
     return <div>
-        
+
+    <div>
+       <video ref={videoRef} autoPlay playsInline  ></video>
+
+       <button onClick = { () =>  {
+        startReceiving(socket)
+       }}>
+        Receive Video 
+       </button>
+       </div>
     </div>
 }
 
